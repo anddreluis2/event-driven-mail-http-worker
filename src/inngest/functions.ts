@@ -1,6 +1,6 @@
 import { inngest } from './client'
 import { prisma } from '../../lib/prisma'
-// import { Resend } from 'resend' // Adicionar depois quando instalar Resend
+import { resend } from '../../lib/resend'
 
 export const sendScheduledEmail = inngest.createFunction(
   { id: 'send-scheduled-email', name: 'Send Scheduled Email' },
@@ -30,18 +30,29 @@ export const sendScheduledEmail = inngest.createFunction(
       })
     })
 
-    // Step 4: Enviar email via Resend (implementar depois)
-    await step.run('send-email', async () => {
-      // TODO: Implementar Resend
-      // const resend = new Resend(process.env.RESEND_API_KEY)
-      // await resend.emails.send({
-      //   to: email.toEmail,
-      //   subject: email.subject,
-      //   html: email.body,
-      // })
-      
-      console.log(`Would send email to ${email.toEmail}`)
-      return { success: true }
+    // Step 4: Enviar email via Resend
+    const emailResult = await step.run('send-email', async () => {
+      try {
+        const result = await resend.emails.send({
+          from: 'onboarding@resend.dev',
+          to: email.toEmail,
+          subject: email.subject,
+          html: email.body,
+        })
+
+        if (result.error) {
+          throw new Error(`Resend error: ${result.error.message}`)
+        }
+
+        return { success: true, messageId: result.data?.id }
+      } catch (error) {
+        // Se falhar, atualiza status para failed
+        await prisma.email.update({
+          where: { id: emailId },
+          data: { status: 'failed' },
+        })
+        throw error
+      }
     })
 
     // Step 5: Atualizar status para sent
@@ -55,6 +66,6 @@ export const sendScheduledEmail = inngest.createFunction(
       })
     })
 
-    return { success: true, emailId }
+    return { success: true, emailId, messageId: emailResult.messageId }
   }
 )
