@@ -1,14 +1,16 @@
 {
   "compilerOptions": {
-    "target": "ESNext",
+    "target": "ES2023",
     "module": "ESNext",
-    "moduleResolution": "Bundler",
+    "moduleResolution": "bundler",
     "strict": true,
+    "esModuleInterop": true,
     "skipLibCheck": true,
+    "ignoreDeprecations": "6.0",
     "lib": [
       "ESNext"
     ],
     "jsx": "react-jsx",
     "jsxImportSource": "hono/jsx"
-  },
+  }
 }
